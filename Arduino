@@ -1,0 +1,45 @@
+#include <NewPing.h> //Arduino Ping Sensor Library
+#include <dht.h> //Arduino Humdity and Temp Library
+#define TRIGGER_PIN  12  
+#define ECHO_PIN     11  
+#define MAX_DISTANCE 400 
+#define LIGHT_PIN 0
+#define DHT11_PIN 7
+#define SLAVE_ADDRESS 0x04
+
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
+dht DHT; 
+
+int photocellReading;  
+int chk;
+unsigned int uS;
+
+void setup() {
+  Serial.begin(9600); //Serial baud rate
+  Wire.begin(SLAVE_ADDRESS); //Beginning I2C communication 
+  Wire.onReceive(receiveData); 
+  Wire.onRequest(sendData);
+}
+
+void loop() {
+  //Reading sensor data every 1000us
+  delay(1000);
+  chk = DHT.read11(DHT11_PIN);
+  uS = sonar.ping();
+  photocellReading = analogRead(LIGHT_PIN);  
+
+}
+
+void sendData() {
+  //My first quick attempt at sending sensor data
+  //Makes a string of the sensor values
+  // "!XXX,XXX,XX.XX,XX.XX?" <- Not the most efficient way of doing this, gonna spend more time on it
+  String data = "!" + String(photocellReading) + "," + String(sonar.convert_cm(uS)) + "," + String(DHT.temperature) + "," + String(DHT.humidity) + "?";
+  char buffer[data.length() + 1]; //Converting the String into a char array
+  data.toCharArray(buffer, data.length() + 1); 
+  Wire.write(buffer); //Sends char array
+}
+
+void receiveData() {
+  delay(1000); //Place holder if we want the Pi to command the Arduino to do things (toggle LEDs, etc)
+}
